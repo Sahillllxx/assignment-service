@@ -1,0 +1,50 @@
+spring:
+  application:
+    name: assignment-service
+
+  data:
+    mongodb:
+      uri: ${MONGODB_URI:mongodb://localhost:27017/converse}
+      auto-index-creation: true
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      timeout: 2000
+
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    consumer:
+      group-id: cg-assignment-service
+      auto-offset-reset: earliest
+      key-deserializer: org.springframework.kafka.support.serializer.ErrorHandlingDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.ErrorHandlingDeserializer
+      properties:
+        spring.deserializer.key.delegate.class: org.apache.kafka.common.serialization.StringDeserializer
+        spring.deserializer.value.delegate.class: org.springframework.kafka.support.serializer.JsonDeserializer
+        spring.json.trusted.packages: "*"
+        spring.json.use.type.headers: true
+        spring.json.type.mapping: com.indigo.event.OutgoingEventEnvelope:com.indigo.model.event.EventEnvelope,com.indigo.flight_ingestion_service.event.OutgoingEventEnvelope:com.indigo.model.event.EventEnvelope,com.indigo.event.FlightRoomActivatedEvent:com.indigo.model.event.FlightRoomActivatedEvent,com.indigo.flight_ingestion_service.event.FlightRoomActivatedEvent:com.indigo.model.event.FlightRoomActivatedEvent,com.indigo.event.FlightRoomArchivedEvent:com.indigo.model.event.FlightRoomArchivedEvent,com.indigo.flight_ingestion_service.event.FlightRoomArchivedEvent:com.indigo.model.event.FlightRoomArchivedEvent
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+  cache:
+    type: none
+
+converse:
+  kafka:
+    topics:
+      room-active: ${ROOM_ACTIVE_TOPIC:converse.${ENV:test}.flight.room.active.v1.json}
+      room-archive: ${ROOM_ARCHIVE_TOPIC:converse.${ENV:test}.flight.room.archive.v1.json}
+      timeline: converse.${ENV:test}.flight.timeline.v1.json
+      mention-pullin: converse.${ENV:test}.mention.pullin.v1.json
+      session-started: converse.${ENV:test}.user.session.started.v1.json
+      session-closed: converse.${ENV:test}.user.session.closed.v1.json
+      assignment-created: converse.${ENV:test}.assignment.created.v1.json
+      scoring-updated: converse.${ENV:test}.scoring.rules.updated.v1.json
+      audit-logged: converse.${ENV:test}.audit.action.logged.v1.json
+  redis:
+    batch-chunk-size: ${REDIS_BATCH_CHUNK_SIZE:2000}
+    flight-desk-map: ${REDIS_KEY_FLIGHT_DESK_MAP:converse.${ENV:test}.flight.desk.map}
+    desk-flight-map: ${REDIS_KEY_DESK_FLIGHT_MAP:converse.${ENV:test}.desk.flight.map}
+    flight-user-map: ${REDIS_KEY_FLIGHT_USER_MAP:converse.${ENV:test}.flight.user.map}
+    user-flight-map: ${REDIS_KEY_USER_FLIGHT_MAP:converse.${ENV:test}.user.flight.map}
