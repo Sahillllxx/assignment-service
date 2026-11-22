@@ -10,7 +10,6 @@ import com.indigo.design.cor.responsibilities.processing.ProcessingResponsibilit
 import com.indigo.design.cor.responsibilities.search.SearchClient;
 import com.indigo.design.cor.responsibilities.search.SearchEngineResponsibility;
 import com.indigo.design.cor.responsibilities.validation.ValidatorResponsibility;
-import com.indigo.design.validation.RoomActivationValidator;
 import com.indigo.mapper.AssignmentEventMapper;
 import com.indigo.mapper.DeskAssignmentMapper;
 import com.indigo.model.context.RoomActivationContext;
@@ -21,6 +20,7 @@ import com.indigo.service.AssignmentCacheService;
 import com.indigo.service.DeskAssignmentDiffService;
 import com.indigo.service.FlightAssignmentPublisher;
 import com.indigo.service.ReactivationProcessor;
+import com.indigo.workflow.validations.RoomActivationValidator;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 

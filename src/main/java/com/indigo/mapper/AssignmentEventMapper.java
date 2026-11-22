@@ -1,7 +1,7 @@
 package com.indigo.mapper;
 
-import com.indigo.model.context.DeskAssignmentDiff;
 import com.indigo.model.FlightAssignment;
+import com.indigo.model.context.DeskAssignmentDiff;
 import com.indigo.model.context.RoomActivationContext;
 import com.indigo.model.event.AssignmentEventType;
 import com.indigo.model.event.AssignmentUpdateReason;

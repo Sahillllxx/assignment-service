@@ -4,6 +4,7 @@ import com.indigo.contexts.Context;
 import com.indigo.design.adapter.Adapter;
 import com.indigo.design.cor.ResponsibilityChain;
 import com.indigo.design.template.ProcessorTemplate;
+
 import java.util.Objects;
 
 public final class EventWorkFlowProcessor<I, S> extends ProcessorTemplate<I, S> {

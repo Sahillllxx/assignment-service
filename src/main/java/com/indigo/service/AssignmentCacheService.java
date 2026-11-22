@@ -4,9 +4,10 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.indigo.config.AssignmentRedisProperties;
+import com.indigo.cosntants.CacheConstants;
 import com.indigo.design.cor.responsibilities.cache.CacheClient;
-import com.indigo.model.context.DeskAssignmentDiff;
 import com.indigo.model.FlightAssignment;
+import com.indigo.model.context.DeskAssignmentDiff;
 import com.indigo.model.context.RoomActivationContext;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -14,11 +15,7 @@ import org.springframework.dao.DataAccessException;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Locale;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 
 @Slf4j
 @Service
@@ -26,6 +23,7 @@ import java.util.Set;
 public final class AssignmentCacheService implements CacheClient<RoomActivationContext, Boolean> {
 
     private static final TypeReference<List<String>> FLIGHT_IDS = new TypeReference<>() {};
+
     private final StringRedisTemplate redis;
     private final ObjectMapper objectMapper;
     private final AssignmentRedisProperties properties;
@@ -55,6 +53,23 @@ public final class AssignmentCacheService implements CacheClient<RoomActivationC
             return true;
         } catch (DataAccessException exception) {
             log.error("Failed to sync Redis assignments for flightId={}", flightId, exception);
+            return false;
+        }
+    }
+
+    public boolean archiveFlight(String flightId, List<String> previousDeskIds, List<String> previousUserIds) {
+        validateKeys();
+        Set<String> desks = archiveIds(previousDeskIds, false);
+        Set<String> users = archiveIds(previousUserIds, true);
+        try {
+            redis.opsForHash().delete(properties.getFlightDeskMap(), flightId);
+            redis.opsForHash().delete(properties.getFlightUserMap(), flightId);
+            updateReverseMappings(properties.getDeskFlightMap(), flightId, desks, false);
+            updateReverseMappings(properties.getUserFlightMap(), flightId, users, false);
+            log.info("Archived Redis assignment mappings for flightId={}", flightId);
+            return true;
+        } catch (DataAccessException | IllegalStateException exception) {
+            log.error("Failed to archive Redis assignment mappings for flightId={}", flightId, exception);
             return false;
         }
     }
@@ -114,11 +129,24 @@ public final class AssignmentCacheService implements CacheClient<RoomActivationC
         return result;
     }
 
+    private Set<String> archiveIds(List<String> ids, boolean normalize) {
+        Set<String> result = new LinkedHashSet<>();
+        if (ids == null) {
+            return result;
+        }
+        for (String id : ids) {
+            if (id != null && !id.isBlank()) {
+                result.add(normalize ? id.trim().toLowerCase(Locale.ROOT) : id);
+            }
+        }
+        return result;
+    }
+
     private void validateKeys() {
-        requireKey(properties.getFlightDeskMap(), "flight-desk-map");
-        requireKey(properties.getDeskFlightMap(), "desk-flight-map");
-        requireKey(properties.getFlightUserMap(), "flight-user-map");
-        requireKey(properties.getUserFlightMap(), "user-flight-map");
+        requireKey(properties.getFlightDeskMap(), CacheConstants.FLIGHT_DESK_MAP);
+        requireKey(properties.getDeskFlightMap(), CacheConstants.DESK_FLIGHT_MAP);
+        requireKey(properties.getFlightUserMap(), CacheConstants.FLIGHT_USER_MAP);
+        requireKey(properties.getUserFlightMap(), CacheConstants.USER_FLIGHT_MAP);
     }
 
     private void requireKey(String key, String name) {

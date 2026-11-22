@@ -1,6 +1,8 @@
-package com.indigo.design.validation;
+package com.indigo.workflow.validations;
 
 import com.indigo.design.cor.responsibilities.validation.ValidationResult;
+import com.indigo.design.validation.ValidationRule;
+import com.indigo.design.validation.Validator;
 import com.indigo.model.context.RoomActivationContext;
 import org.springframework.stereotype.Component;
 

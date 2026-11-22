@@ -26,7 +26,7 @@ spring:
         spring.json.type.mapping: com.indigo.event.OutgoingEventEnvelope:com.indigo.model.event.EventEnvelope,com.indigo.flight_ingestion_service.event.OutgoingEventEnvelope:com.indigo.model.event.EventEnvelope,com.indigo.event.FlightRoomActivatedEvent:com.indigo.model.event.FlightRoomActivatedEvent,com.indigo.flight_ingestion_service.event.FlightRoomActivatedEvent:com.indigo.model.event.FlightRoomActivatedEvent,com.indigo.event.FlightRoomArchivedEvent:com.indigo.model.event.FlightRoomArchivedEvent,com.indigo.flight_ingestion_service.event.FlightRoomArchivedEvent:com.indigo.model.event.FlightRoomArchivedEvent
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
-      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
   cache:
     type: none
 

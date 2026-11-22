@@ -1,8 +1,8 @@
 package com.indigo.model.context;
 
 
-import com.indigo.model.event.AssignmentEntry;
 import com.indigo.model.FlightAssignment;
+import com.indigo.model.event.AssignmentEntry;
 import com.indigo.model.event.FlightRoomDetails;
 import lombok.AllArgsConstructor;
 import lombok.Builder;

@@ -14,8 +14,8 @@ import java.time.Instant;
 @AllArgsConstructor
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class FlightRoomArchivedEvent {
-
     private String id;
     private String status;
     private Instant archivedAt;
+
 }

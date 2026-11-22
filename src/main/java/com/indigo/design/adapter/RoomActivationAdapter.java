@@ -1,12 +1,12 @@
 package com.indigo.design.adapter;
 
 import com.indigo.contexts.EventContext;
-import com.indigo.model.event.FlightRoomActivatedEvent;
 import com.indigo.model.context.RoomActivationContext;
+import com.indigo.model.event.FlightRoomActivatedEvent;
 import org.springframework.stereotype.Component;
 
-import java.util.Objects;
 import java.util.ArrayList;
+import java.util.Objects;
 
 @Component
 public final class RoomActivationAdapter implements Adapter<FlightRoomActivatedEvent, EventContext<RoomActivationContext>> {
