@@ -4,7 +4,7 @@ spring:
 
   data:
     mongodb:
-      uri: ${MONGODB_URI:mongodb://localhost:27017/converse}
+      uri: ${MONGODB_URI:mongodb://localhost:27017/6econverse}
       auto-index-creation: true
     redis:
       host: ${REDIS_HOST:localhost}
@@ -48,3 +48,12 @@ converse:
     desk-flight-map: ${REDIS_KEY_DESK_FLIGHT_MAP:converse.${ENV:test}.desk.flight.map}
     flight-user-map: ${REDIS_KEY_FLIGHT_USER_MAP:converse.${ENV:test}.flight.user.map}
     user-flight-map: ${REDIS_KEY_USER_FLIGHT_MAP:converse.${ENV:test}.user.flight.map}
+
+desk-assignment:
+  redis:
+    key-prefix: "6econverse_desk_assignment:indexes:"
+    station-key: "${desk-assignment.redis.key-prefix}station"
+    aircraft-registration-key: "${desk-assignment.redis.key-prefix}aircraft-registration"
+    aircraft-type-key: "${desk-assignment.redis.key-prefix}aircraft-type"
+    zone-key: "${desk-assignment.redis.key-prefix}zone"
+    aircraft-zone-key: "${desk-assignment.redis.key-prefix}aircraft-zone"
