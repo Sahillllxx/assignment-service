@@ -3,7 +3,6 @@ package com.indigo.compute.query.reader.redis;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Repository;
 import org.springframework.util.StringUtils;
@@ -15,7 +14,9 @@ import com.indigo.compute.query.reader.AssignmentIndexReader;
 import com.indigo.config.DeskAssignmentRedisConfig;
 import com.indigo.model.event.FlightRoomDetails;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 @Repository
 @RequiredArgsConstructor
 public class RedisAssignmentIndexReader implements AssignmentIndexReader {
@@ -30,56 +31,96 @@ public class RedisAssignmentIndexReader implements AssignmentIndexReader {
 
     @Override
     public AssignmentIndexSnapshot readIndexes(FlightRoomDetails room) {
-        AssignmentIndexSnapshot snapshot = new AssignmentIndexSnapshot();
-        snapshot.setStationIndexes(Map.of());
-        snapshot.setAircraftRegistrationIndexes(Map.of());
-        snapshot.setAircraftTypeIndexes(Map.of());
-        snapshot.setZoneIndexes(Map.of());
-        snapshot.setAircraftZoneIndexes(Map.of());
-        if (room == null) {
-            return snapshot;
-        }
-        boolean station = StringUtils.hasText(room.getStartStation()) || StringUtils.hasText(room.getEndStation());
-        boolean registration = StringUtils.hasText(room.getAircraftRegistration());
-        boolean type = StringUtils.hasText(room.getAircraftType());
-        List<String> keys = new ArrayList<>();
-        if (station) {
-            keys.add(redisIndexProperties.getStationKey());
-        }
-        if (registration) {
-            keys.add(redisIndexProperties.getAircraftRegistrationKey());
-            keys.add(redisIndexProperties.getAircraftZoneKey());
-            keys.add(redisIndexProperties.getZoneKey());
-        }
-        if (type) {
-            keys.add(redisIndexProperties.getAircraftTypeKey());
-        }
-        if (keys.isEmpty()) {
-            return snapshot;
-        }
-        List<Object> values = Objects.requireNonNull(redisTemplate.opsForValue().multiGet(keys),
-                "Redis multiGet returned no response");
-        if (values.size() != keys.size()) {
-            throw new IllegalStateException("Redis multiGet response does not match requested indexes");
-        }
-        int position = 0;
-        if (station) {
-            snapshot.setStationIndexes(ruleIndex(values.get(position++)));
-        }
-        if (registration) {
-            snapshot.setAircraftRegistrationIndexes(ruleIndex(values.get(position++)));
-            Object aircraftZones = values.get(position++);
-            snapshot.setAircraftZoneIndexes(aircraftZones == null ? Map.of()
-                    : objectMapper.convertValue(aircraftZones, AIRCRAFT_ZONE_INDEX));
-            snapshot.setZoneIndexes(ruleIndex(values.get(position++)));
-        }
-        if (type) {
-            snapshot.setAircraftTypeIndexes(ruleIndex(values.get(position)));
-        }
+        AssignmentIndexSnapshot snapshot = AssignmentIndexSnapshot.empty();
+        if (room == null) return snapshot;
+
+        boolean stationRequested = hasStation(room);
+        boolean registrationRequested = StringUtils.hasText(room.getAircraftRegistration());
+        boolean typeRequested = StringUtils.hasText(room.getAircraftType());
+
+        List<String> requestedIndexKeys = requestedIndexKeys(room);
+        if (requestedIndexKeys.isEmpty()) return snapshot;
+
+        List<Object> indexValues = readIndexValues(requestedIndexKeys);
+        if (indexValues == null) return snapshot;
+
+        populateSnapshot(snapshot, indexValues, stationRequested, registrationRequested, typeRequested);
+
         return snapshot;
     }
 
     private Map<String, List<DeskAssignmentRule>> ruleIndex(Object value) {
         return value == null ? Map.of() : objectMapper.convertValue(value, RULE_INDEX);
+    }
+
+    private Map<String, List<String>> aircraftZoneIndex(Object value) {
+        return value == null ? Map.of() : objectMapper.convertValue(value, AIRCRAFT_ZONE_INDEX);
+    }
+
+    private List<Object> readIndexValues(List<String> requestedIndexKeys) {
+        List<Object> indexValues;
+        try {
+            indexValues = redisTemplate.opsForValue().multiGet(requestedIndexKeys);
+        } catch (RuntimeException ex) {
+            log.error("Failed to read assignment indexes for Redis keys={}", requestedIndexKeys, ex);
+            return null;
+        }
+
+        if (indexValues == null) {
+            log.error("Redis multiGet returned no response for Redis keys={}", requestedIndexKeys);
+            return null;
+        }
+
+        if (indexValues.size() != requestedIndexKeys.size()) {
+            log.error("Redis multiGet returned {} values for {} requested Redis keys={}",
+                    indexValues.size(), requestedIndexKeys.size(), requestedIndexKeys);
+            return null;
+        }
+
+        return indexValues;
+    }
+
+    private List<String> requestedIndexKeys(FlightRoomDetails room) {
+        List<String> indexKeys = new ArrayList<>();
+
+        if (hasStation(room)) {
+            indexKeys.add(redisIndexProperties.getStationKey());
+        }
+        if (StringUtils.hasText(room.getAircraftRegistration())) {
+            indexKeys.add(redisIndexProperties.getAircraftRegistrationKey());
+            indexKeys.add(redisIndexProperties.getAircraftZoneKey());
+            indexKeys.add(redisIndexProperties.getZoneKey());
+        }
+        if (StringUtils.hasText(room.getAircraftType())) {
+            indexKeys.add(redisIndexProperties.getAircraftTypeKey());
+        }
+
+        return indexKeys;
+    }
+
+    private boolean hasStation(FlightRoomDetails room) {
+        return StringUtils.hasText(room.getStartStation())
+                || StringUtils.hasText(room.getEndStation());
+    }
+
+    private void populateSnapshot(
+            AssignmentIndexSnapshot snapshot,
+            List<Object> indexValues,
+            boolean stationRequested,
+            boolean registrationRequested,
+            boolean typeRequested) {
+        int valueIndex = 0;
+
+        if (stationRequested) {
+            snapshot.setStationIndexes(ruleIndex(indexValues.get(valueIndex++)));
+        }
+        if (registrationRequested) {
+            snapshot.setAircraftRegistrationIndexes(ruleIndex(indexValues.get(valueIndex++)));
+            snapshot.setAircraftZoneIndexes(aircraftZoneIndex(indexValues.get(valueIndex++)));
+            snapshot.setZoneIndexes(ruleIndex(indexValues.get(valueIndex++)));
+        }
+        if (typeRequested) {
+            snapshot.setAircraftTypeIndexes(ruleIndex(indexValues.get(valueIndex)));
+        }
     }
 }
